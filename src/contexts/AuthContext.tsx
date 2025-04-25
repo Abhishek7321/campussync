@@ -1,6 +1,7 @@
 
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { User, dummyUsers } from "@/lib/constants";
+import { supabase } from "@/integrations/supabase/client";
 
 type AuthContextType = {
   currentUser: User | null;
@@ -16,6 +17,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const isAuthenticated = !!currentUser;
 
+  // Check for saved user in local storage on initial load
+  useEffect(() => {
+    const savedUser = localStorage.getItem("campusSyncUser");
+    if (savedUser) {
+      try {
+        setCurrentUser(JSON.parse(savedUser));
+      } catch (error) {
+        console.error("Error parsing saved user:", error);
+        localStorage.removeItem("campusSyncUser");
+      }
+    }
+  }, []);
+
   const login = async (email: string, password: string) => {
     // Mock login function
     return new Promise<void>((resolve, reject) => {
@@ -24,6 +38,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         if (user && password === "password") {
           setCurrentUser(user);
+          // Save user to local storage
+          localStorage.setItem("campusSyncUser", JSON.stringify(user));
           resolve();
         } else {
           reject(new Error("Invalid email or password"));
@@ -53,6 +69,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           
           // In a real app, we would persist this user to a database
           setCurrentUser(newUser);
+          // Save user to local storage
+          localStorage.setItem("campusSyncUser", JSON.stringify(newUser));
           resolve();
         }
       }, 1000);
@@ -61,6 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     setCurrentUser(null);
+    localStorage.removeItem("campusSyncUser");
   };
 
   return (

@@ -43,7 +43,7 @@ export default function Dashboard() {
       <div className="animate-fade-in">
         <section className="mb-6">
           <h2 className="text-2xl font-bold mb-2">
-            Welcome back, {currentUser?.name}!
+            Welcome back, {currentUser?.name || 'Guest'}!
           </h2>
           <p className="text-gray-600">
             Here's what's happening on campus today.
@@ -212,25 +212,29 @@ export default function Dashboard() {
                 <div className="flex flex-col items-center text-center">
                   <Avatar className="h-20 w-20 mb-4">
                     <AvatarImage src={currentUser?.avatar} alt={currentUser?.name} />
-                    <AvatarFallback>{currentUser?.name.charAt(0)}</AvatarFallback>
+                    <AvatarFallback>{currentUser?.name?.charAt(0) || 'U'}</AvatarFallback>
                   </Avatar>
-                  <h3 className="font-medium text-lg">{currentUser?.name}</h3>
+                  <h3 className="font-medium text-lg">{currentUser?.name || 'Guest'}</h3>
                   <p className="text-sm text-gray-600 capitalize">
-                    {currentUser?.role}
+                    {currentUser?.role || 'Visitor'}
                   </p>
                   <p className="text-sm text-gray-600 mt-1">
-                    {currentUser?.role === "student"
-                      ? `Major: ${currentUser.major}`
-                      : `Department: ${currentUser.department}`}
+                    {currentUser && currentUser.role === "student"
+                      ? `Major: ${currentUser.major || 'Undeclared'}`
+                      : currentUser && currentUser.role === "teacher"
+                      ? `Department: ${currentUser.department || 'General'}`
+                      : 'Sign in to see your profile'}
                   </p>
                   <div className="flex gap-2 mt-4">
                     <Badge className="bg-gradient-primary hover:opacity-90">
-                      {currentUser?.role === "student" ? "3.8 GPA" : "Faculty"}
+                      {currentUser?.role === "student" ? "3.8 GPA" : currentUser?.role === "teacher" ? "Faculty" : "Guest"}
                     </Badge>
                     <Badge variant="outline">
                       {currentUser?.role === "student"
                         ? "Junior"
-                        : "Associate Professor"}
+                        : currentUser?.role === "teacher"
+                        ? "Associate Professor"
+                        : "Visitor"}
                     </Badge>
                   </div>
                 </div>
