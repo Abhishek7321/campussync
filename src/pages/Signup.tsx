@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -39,10 +38,10 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 export default function Signup() {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { signup } = useAuth();
+  const { signup, isLoading: isAuthLoading } = useAuth();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const form = useForm<FormValues>({
@@ -57,13 +56,11 @@ export default function Signup() {
   });
 
   async function onSubmit(values: FormValues) {
-    setIsLoading(true);
+    setIsSubmitting(true);
     setErrorMessage(null);
     
     try {
-      console.log("Starting signup process...");
-      
-      // Use the signup function from AuthContext
+      // Use the signup function from AuthContext with Supabase
       await signup(values.name, values.email, values.password, values.role);
       
       toast({
@@ -77,16 +74,36 @@ export default function Signup() {
       console.error("Signup error:", error);
       
       // Set error message
-      setErrorMessage(error.message || "Could not create account. Please try again.");
+      let errorMsg = error.message || "Could not create account. Please try again.";
+      
+      // Handle specific Supabase errors
+      if (error.message.includes("already registered")) {
+        errorMsg = "This email is already registered. Please use a different email or sign in.";
+      } else if (error.message.includes("password")) {
+        errorMsg = "Password is too weak. Please use a stronger password.";
+      } else if (error.message.includes("email")) {
+        errorMsg = "Please enter a valid email address.";
+      }
+      
+      setErrorMessage(errorMsg);
       
       toast({
         title: "Signup failed",
-        description: "Could not create account. Please try again.",
+        description: errorMsg,
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
+  }
+
+  // Show loading state while checking auth
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
   }
 
   return (
@@ -101,7 +118,6 @@ export default function Signup() {
         </div>
 
         <div className="bg-white p-6 rounded-xl shadow-sm border">
-          
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
@@ -114,7 +130,7 @@ export default function Signup() {
                       <Input
                         placeholder="John Doe"
                         {...field}
-                        disabled={isLoading}
+                        disabled={isSubmitting}
                       />
                     </FormControl>
                     <FormMessage />
@@ -130,10 +146,11 @@ export default function Signup() {
                     <FormLabel>Email</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="email@campus.edu"
+                        type="email"
+                        placeholder="your.email@example.com"
                         {...field}
                         autoComplete="email"
-                        disabled={isLoading}
+                        disabled={isSubmitting}
                       />
                     </FormControl>
                     <FormMessage />
@@ -150,7 +167,7 @@ export default function Signup() {
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
-                      disabled={isLoading}
+                      disabled={isSubmitting}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -179,7 +196,7 @@ export default function Signup() {
                         placeholder="••••••••"
                         {...field}
                         autoComplete="new-password"
-                        disabled={isLoading}
+                        disabled={isSubmitting}
                       />
                     </FormControl>
                     <FormMessage />
@@ -199,7 +216,7 @@ export default function Signup() {
                         placeholder="••••••••"
                         {...field}
                         autoComplete="new-password"
-                        disabled={isLoading}
+                        disabled={isSubmitting}
                       />
                     </FormControl>
                     <FormMessage />
@@ -216,9 +233,9 @@ export default function Signup() {
               <Button
                 type="submit"
                 className="w-full bg-gradient-primary hover:opacity-90"
-                disabled={isLoading}
+                disabled={isSubmitting}
               >
-                {isLoading ? (
+                {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Creating account...

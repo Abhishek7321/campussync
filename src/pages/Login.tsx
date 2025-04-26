@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,15 +18,15 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
 const formSchema = z.object({
-  email: z.string().min(1, "Email is required"),
+  email: z.string().min(1, "Email is required").email("Please enter a valid email"),
   password: z.string().min(1, "Password is required"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
 export default function Login() {
-  const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { login, isLoading: isAuthLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -41,38 +40,52 @@ export default function Login() {
   });
 
   async function onSubmit(values: FormValues) {
-    setIsLoading(true);
+    setIsSubmitting(true);
     setErrorMessage(null);
     
     try {
-      // Check for hardcoded user credentials
-      if (values.email === "Abhi" && values.password === "Abhi@12") {
-        // Simulate successful login
-        await login(values.email, values.password);
-        
-        toast({
-          title: "Login successful!",
-          description: "Welcome back to CampusSync.",
-        });
-        
-        navigate("/FeedPage");
-      } else {
-        // Simulate login failure
-        throw new Error("Invalid email or password");
-      }
+      // Login with Supabase
+      await login(values.email, values.password);
+      
+      toast({
+        title: "Login successful!",
+        description: "Welcome back to CampusSync.",
+      });
+      
+      // Redirect to the feed page
+      navigate("/FeedPage");
     } catch (error: any) {
       console.error("Login error:", error);
       
-      setErrorMessage("Invalid email or password. Please try again.");
+      // Set error message
+      let errorMsg = error.message || "Invalid email or password. Please try again.";
+      
+      // Handle specific Supabase errors
+      if (error.message.includes("Invalid login credentials")) {
+        errorMsg = "Invalid email or password. Please try again.";
+      } else if (error.message.includes("Email not confirmed")) {
+        errorMsg = "Please confirm your email before signing in.";
+      }
+      
+      setErrorMessage(errorMsg);
       
       toast({
         title: "Login failed",
-        description: "Invalid email or password.",
+        description: errorMsg,
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
+  }
+
+  // Show loading state while checking auth
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
   }
 
   return (
@@ -96,12 +109,13 @@ export default function Login() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Username</FormLabel>
+                    <FormLabel>Email</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Enter username"
+                        type="email"
+                        placeholder="your.email@example.com"
                         {...field}
-                        disabled={isLoading}
+                        disabled={isSubmitting}
                       />
                     </FormControl>
                     <FormMessage />
@@ -120,7 +134,7 @@ export default function Login() {
                         type="password"
                         placeholder="••••••••"
                         {...field}
-                        disabled={isLoading}
+                        disabled={isSubmitting}
                       />
                     </FormControl>
                     <FormMessage />
@@ -137,9 +151,9 @@ export default function Login() {
               <Button
                 type="submit"
                 className="w-full bg-gradient-primary hover:opacity-90"
-                disabled={isLoading}
+                disabled={isSubmitting}
               >
-                {isLoading ? (
+                {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Signing in...
