@@ -1,5 +1,5 @@
 
-import { Calendar, Home, MessageSquare, UserPlus, BookOpen, BellRing } from "lucide-react";
+import { Calendar, Home, MessageSquare, UserPlus,Plus, BookOpen, BellRing } from "lucide-react";
 
 export type UserRole = "student" | "teacher";
 
@@ -113,6 +113,12 @@ export const sidebarItems = [
     name: "Messages",
     icon: MessageSquare,
     path: "/messages",
+  },
+
+  {
+    name: "Feeds",
+    icon: Plus,
+    path: "/Feedpage",
   },
 ];
 

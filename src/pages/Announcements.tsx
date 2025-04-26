@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { announcements, categories } from "@/lib/constants";
@@ -63,15 +62,16 @@ export default function Announcements() {
 
   return (
     <Layout showFAB={isTeacher} onFABClick={() => setDialogOpen(true)}>
-      <div className="animate-fade-in">
-        <div className="flex flex-wrap gap-2 mb-6">
+      <div className="animate-fade-in px-6 py-8">
+        {/* Category Filters */}
+        <div className="flex flex-wrap gap-3 mb-8">
           {categories.announcements.map((category) => (
             <Badge
               key={category}
               onClick={() => handleCategoryClick(category)}
-              className={`cursor-pointer ${
+              className={`cursor-pointer rounded-full px-4 py-2 text-sm transition-colors ${
                 selectedCategory === category
-                  ? "bg-gradient-primary hover:opacity-90"
+                  ? "bg-gradient-primary text-white hover:opacity-90"
                   : "bg-gray-100 hover:bg-gray-200 text-gray-800"
               }`}
             >
@@ -80,42 +80,48 @@ export default function Announcements() {
           ))}
         </div>
 
-        <div className="space-y-4">
+        {/* Announcements List */}
+        <div className="space-y-6">
           {filteredAnnouncements.map((announcement) => (
-            <Card key={announcement.id} className="overflow-hidden card-hover">
-              <CardContent className="p-0">
-                <div className="p-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-medium text-lg mb-1">
-                        {announcement.title}
-                      </h3>
-                      <div className="flex items-center gap-2 text-gray-500 text-sm mb-3">
-                        <Avatar className="h-6 w-6">
-                          <AvatarImage
-                            src={announcement.authorAvatar}
-                            alt={announcement.author}
-                          />
-                          <AvatarFallback>
-                            {announcement.author.charAt(0)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span>{announcement.author}</span>
-                        <span>•</span>
-                        <span>{formatDate(announcement.date)}</span>
-                      </div>
+            <Card
+              key={announcement.id}
+              className="overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 rounded-xl border border-gray-200"
+            >
+              <CardContent className="p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="space-y-1">
+                    <h3 className="font-semibold text-xl text-gray-800">
+                      {announcement.title}
+                    </h3>
+                    <div className="flex items-center gap-2 text-gray-500 text-sm">
+                      <Avatar className="h-7 w-7">
+                        <AvatarImage
+                          src={announcement.authorAvatar}
+                          alt={announcement.author}
+                        />
+                        <AvatarFallback>
+                          {announcement.author.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span>{announcement.author}</span>
+                      <span>•</span>
+                      <span>{formatDate(announcement.date)}</span>
                     </div>
-                    <Badge variant="outline">{announcement.category}</Badge>
                   </div>
-                  <p className="text-gray-600">{announcement.content}</p>
+                  <Badge variant="outline" className="px-3 py-1 rounded-full">
+                    {announcement.category}
+                  </Badge>
                 </div>
+                <p className="text-gray-600 leading-relaxed">
+                  {announcement.content}
+                </p>
               </CardContent>
             </Card>
           ))}
 
           {filteredAnnouncements.length === 0 && (
-            <div className="text-center p-10">
-              <p className="text-gray-500">
+            <div className="text-center p-16">
+              <p className="text-gray-400 text-lg">
                 No announcements found for this category.
               </p>
             </div>
@@ -132,7 +138,7 @@ export default function Announcements() {
               Post a new announcement to the campus community.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-5 py-4">
             <div className="grid gap-2">
               <Label htmlFor="title">Title</Label>
               <Input
@@ -169,7 +175,7 @@ export default function Announcements() {
                 placeholder="Announcement details"
                 value={announcementContent}
                 onChange={(e) => setAnnouncementContent(e.target.value)}
-                rows={5}
+                rows={6}
               />
             </div>
           </div>

@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
-import { User, dummyUsers } from "@/lib/constants";
-import { supabase } from "@/integrations/supabase/client";
+import { User } from "@/lib/constants";
+import { profileService } from "@/services/databaseService";
 
 type AuthContextType = {
   currentUser: User | null;
@@ -9,9 +9,19 @@ type AuthContextType = {
   login: (email: string, password: string) => Promise<void>;
   signup: (name: string, email: string, password: string, role: "student" | "teacher") => Promise<void>;
   logout: () => void;
+  updateUserProfile: (updates: Partial<User>) => Promise<User | null>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Helper function to generate a mock user ID
+const generateUserId = (): string => {
+  return Math.random().toString(36).substring(2, 15) + 
+         Math.random().toString(36).substring(2, 15);
+};
+
+// Mock user database for authentication
+const mockUsers: Record<string, { email: string; password: string; userId: string }> = {};
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -28,67 +38,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem("campusSyncUser");
       }
     }
-
-    // Set up Supabase auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (event === 'SIGNED_IN' && session?.user) {
-          // Convert Supabase user to app user format
-          const user: User = {
-            id: session.user.id,
-            name: session.user.user_metadata.name || 'User',
-            email: session.user.email || '',
-            avatar: `https://randomuser.me/api/portraits/${session.user.user_metadata.role === "student" ? "men" : "women"}/${Math.floor(Math.random() * 70)}.jpg`,
-            role: session.user.user_metadata.role || 'student',
-            major: session.user.user_metadata.role === 'student' ? session.user.user_metadata.major || 'Undeclared' : undefined,
-            department: session.user.user_metadata.role === 'teacher' ? session.user.user_metadata.department || 'General' : undefined,
-          };
-          
-          setCurrentUser(user);
-          localStorage.setItem("campusSyncUser", JSON.stringify(user));
-        } else if (event === 'SIGNED_OUT') {
-          setCurrentUser(null);
-          localStorage.removeItem("campusSyncUser");
-        }
-      }
-    );
-
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        // Convert Supabase user to app user format
-        const user: User = {
-          id: session.user.id,
-          name: session.user.user_metadata.name || 'User',
-          email: session.user.email || '',
-          avatar: `https://randomuser.me/api/portraits/${session.user.user_metadata.role === "student" ? "men" : "women"}/${Math.floor(Math.random() * 70)}.jpg`,
-          role: session.user.user_metadata.role || 'student',
-          major: session.user.user_metadata.role === 'student' ? session.user.user_metadata.major || 'Undeclared' : undefined,
-          department: session.user.user_metadata.role === 'teacher' ? session.user.user_metadata.department || 'General' : undefined,
-        };
-        
-        setCurrentUser(user);
-        localStorage.setItem("campusSyncUser", JSON.stringify(user));
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
   }, []);
 
   const login = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-      
-      if (error) {
-        throw error;
+      // Check for hardcoded user
+      if (email === "Abhi" && password === "Abhi@12") {
+        // Create a mock user profile
+        const userId = "abhi-123";
+        
+        // Check if we already have a profile for this user
+        let profile = await profileService.getProfileById(userId);
+        
+        // If not, create one
+        if (!profile) {
+          profile = await profileService.createProfile({
+            id: userId,
+            name: "Abhika",
+            email: "abhi@campus.edu",
+            avatar: `https://randomuser.me/api/portraits/men/${Math.floor(Math.random() * 70)}.jpg`,
+            role: "student",
+            major: "Computer Science",
+            department: null,
+            bio: "Campus Sync Developer",
+            join_date: new Date().toISOString(),
+          });
+        }
+        
+        if (!profile) {
+          throw new Error("Failed to create user profile");
+        }
+        
+        // Convert to User type and update state
+        const user = profileService.profileToUser(profile);
+        setCurrentUser(user);
+        localStorage.setItem("campusSyncUser", JSON.stringify(user));
+        return;
       }
       
-      // The session will be handled by the onAuthStateChange listener
+      // For other users (if we add more later)
+      const userEntry = Object.values(mockUsers).find(user => user.email === email);
+      
+      if (!userEntry || userEntry.password !== password) {
+        throw new Error("Invalid email or password");
+      }
+      
+      // Get user profile
+      const profile = await profileService.getProfileById(userEntry.userId);
+      
+      if (!profile) {
+        throw new Error("User profile not found");
+      }
+      
+      // Convert to User type and update state
+      const user = profileService.profileToUser(profile);
+      setCurrentUser(user);
+      localStorage.setItem("campusSyncUser", JSON.stringify(user));
     } catch (error) {
       console.error("Login error:", error);
       throw new Error("Invalid email or password");
@@ -97,24 +102,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signup = async (name: string, email: string, password: string, role: "student" | "teacher") => {
     try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            name,
-            role,
-            major: role === 'student' ? 'Undeclared' : undefined,
-            department: role === 'teacher' ? 'General' : undefined,
-          },
-        }
-      });
-      
-      if (error) {
-        throw error;
+      // Check if email already exists
+      if (Object.values(mockUsers).some(user => user.email === email)) {
+        throw new Error("Email already in use");
       }
       
-      // The session will be handled by the onAuthStateChange listener
+      // Generate a new user ID
+      const userId = generateUserId();
+      
+      // Store user credentials
+      mockUsers[email] = {
+        email,
+        password,
+        userId
+      };
+      
+      // Create a profile
+      const avatarUrl = `https://randomuser.me/api/portraits/${role === "student" ? "men" : "women"}/${Math.floor(Math.random() * 70)}.jpg`;
+      
+      const profile = await profileService.createProfile({
+        id: userId,
+        name,
+        email,
+        avatar: avatarUrl,
+        role,
+        major: role === 'student' ? 'Undeclared' : null,
+        department: role === 'teacher' ? 'General' : null,
+        bio: null,
+        join_date: new Date().toISOString(),
+      });
+      
+      if (!profile) {
+        throw new Error("Failed to create profile");
+      }
+      
+      // Convert to User type and update state
+      const user = profileService.profileToUser(profile);
+      setCurrentUser(user);
+      localStorage.setItem("campusSyncUser", JSON.stringify(user));
     } catch (error) {
       console.error("Signup error:", error);
       throw new Error("Could not create account");
@@ -123,11 +148,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
-      await supabase.auth.signOut();
       setCurrentUser(null);
       localStorage.removeItem("campusSyncUser");
     } catch (error) {
       console.error("Logout error:", error);
+    }
+  };
+
+  const updateUserProfile = async (updates: Partial<User>): Promise<User | null> => {
+    if (!currentUser) {
+      throw new Error("No user is logged in");
+    }
+    
+    try {
+      // Update the profile in the database
+      const updatedProfile = await profileService.updateProfile(currentUser.id, {
+        name: updates.name,
+        avatar: updates.avatar,
+        major: updates.major || null,
+        department: updates.department || null,
+        bio: updates.bio || null,
+      });
+      
+      if (!updatedProfile) {
+        throw new Error("Failed to update profile");
+      }
+      
+      // Convert to User type
+      const updatedUser = profileService.profileToUser(updatedProfile);
+      
+      // Update local state and storage
+      setCurrentUser(updatedUser);
+      localStorage.setItem("campusSyncUser", JSON.stringify(updatedUser));
+      
+      return updatedUser;
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      return null;
     }
   };
 
@@ -139,6 +196,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         signup,
         logout,
+        updateUserProfile,
       }}
     >
       {children}

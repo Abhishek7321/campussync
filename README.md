@@ -59,6 +59,42 @@ This project is built with:
 - React
 - shadcn-ui
 - Tailwind CSS
+- Supabase (Authentication and Database)
+
+## Supabase Integration
+
+This project uses Supabase for authentication and database functionality. To set up Supabase:
+
+1. Create a new Supabase project at [https://app.supabase.io](https://app.supabase.io)
+2. Set up the database schema:
+   - Go to the SQL Editor in your Supabase project
+   - Copy the contents of the `supabase/setup.sql` file
+   - Paste it into the SQL Editor and run it
+3. Copy `.env.local.example` to `.env.local` and update with your Supabase credentials:
+   - `VITE_SUPABASE_URL`: Your Supabase project URL (e.g., https://your-project-id.supabase.co)
+   - `VITE_SUPABASE_ANON_KEY`: Your Supabase project anon/public key
+4. Restart the development server
+
+For detailed instructions, see the [Supabase setup guide](./supabase/README.md).
+
+### Database Schema
+
+The application uses the following tables:
+
+- `profiles`: User profiles with personal information
+- `posts`: User posts/status updates
+- `post_tags`: Tags associated with posts
+- `likes`: Post likes by users
+- `comments`: Comments on posts
+- `followers`: User follow relationships
+
+### Troubleshooting
+
+If you encounter issues with account creation:
+
+1. Make sure you've run the SQL setup script in the Supabase SQL Editor
+2. Check that your Supabase credentials are correctly set in `.env.local`
+3. Look for error messages in the browser console for more details
 
 ## How can I deploy this project?
 

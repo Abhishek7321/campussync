@@ -92,7 +92,7 @@ export function Sidebar() {
       <div className="border-t p-4">
         <div className="flex items-center justify-between">
           {isOpen && currentUser ? (
-            <div className="flex items-center gap-3">
+            <Link to="/profile" className="flex items-center gap-3 hover:bg-gray-100 p-2 rounded-md transition-colors">
               <Avatar>
                 <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
                 <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
@@ -103,23 +103,40 @@ export function Sidebar() {
                   {currentUser.role}
                 </span>
               </div>
-            </div>
+            </Link>
           ) : (
-            <Avatar>
-              <AvatarImage src={currentUser?.avatar} alt={currentUser?.name} />
-              <AvatarFallback>
-                {currentUser?.name.charAt(0) || "U"}
-              </AvatarFallback>
-            </Avatar>
+            <Link to="/profile" className="hover:bg-gray-100 p-2 rounded-md transition-colors">
+              <Avatar>
+                <AvatarImage src={currentUser?.avatar} alt={currentUser?.name} />
+                <AvatarFallback>
+                  {currentUser?.name.charAt(0) || "U"}
+                </AvatarFallback>
+              </Avatar>
+            </Link>
           )}
 
-          <button
-            onClick={logout}
-            className="rounded-full p-2 text-gray-500 hover:bg-gray-100"
-            title="Logout"
-          >
-            <LogOut className="h-5 w-5" />
-          </button>
+          <div className="flex gap-2">
+            {isOpen && (
+              <Link 
+                to="/profile" 
+                className="rounded-full p-2 text-gray-500 hover:bg-gray-100 transition-colors"
+                title="Profile"
+              >
+                <User className="h-5 w-5" />
+              </Link>
+            )}
+            <button
+              onClick={() => {
+                if (window.confirm("Are you sure you want to log out?")) {
+                  logout();
+                }
+              }}
+              className="rounded-full p-2 text-gray-500 hover:bg-gray-100 hover:text-red-500 transition-colors"
+              title="Logout"
+            >
+              <LogOut className="h-5 w-5" />
+            </button>
+          </div>
         </div>
       </div>
     </aside>

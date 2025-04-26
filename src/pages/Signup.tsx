@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -39,9 +40,10 @@ type FormValues = z.infer<typeof formSchema>;
 
 export default function Signup() {
   const [isLoading, setIsLoading] = useState(false);
-  const { signup } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signup } = useAuth();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -56,17 +58,30 @@ export default function Signup() {
 
   async function onSubmit(values: FormValues) {
     setIsLoading(true);
+    setErrorMessage(null);
+    
     try {
+      console.log("Starting signup process...");
+      
+      // Use the signup function from AuthContext
       await signup(values.name, values.email, values.password, values.role);
+      
       toast({
         title: "Account created!",
         description: "Welcome to CampusSync.",
       });
-      navigate("/dashboard");
-    } catch (error) {
+      
+      // Redirect to the feed page
+      navigate("/FeedPage");
+    } catch (error: any) {
+      console.error("Signup error:", error);
+      
+      // Set error message
+      setErrorMessage(error.message || "Could not create account. Please try again.");
+      
       toast({
         title: "Signup failed",
-        description: "This email may already be in use.",
+        description: "Could not create account. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -86,6 +101,7 @@ export default function Signup() {
         </div>
 
         <div className="bg-white p-6 rounded-xl shadow-sm border">
+          
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
@@ -191,12 +207,25 @@ export default function Signup() {
                 )}
               />
 
+              {errorMessage && (
+                <div className="mb-4 p-3 bg-destructive/10 border border-destructive rounded-md text-sm text-destructive">
+                  {errorMessage}
+                </div>
+              )}
+              
               <Button
                 type="submit"
                 className="w-full bg-gradient-primary hover:opacity-90"
                 disabled={isLoading}
               >
-                {isLoading ? "Creating account..." : "Create account"}
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating account...
+                  </>
+                ) : (
+                  "Create account"
+                )}
               </Button>
             </form>
           </Form>

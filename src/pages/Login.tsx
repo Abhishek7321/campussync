@@ -16,10 +16,11 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
 
 const formSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  email: z.string().min(1, "Email is required"),
+  password: z.string().min(1, "Password is required"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -29,6 +30,7 @@ export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -40,14 +42,29 @@ export default function Login() {
 
   async function onSubmit(values: FormValues) {
     setIsLoading(true);
+    setErrorMessage(null);
+    
     try {
-      await login(values.email, values.password);
-      toast({
-        title: "Login successful!",
-        description: "Welcome back to CampusSync.",
-      });
-      navigate("/dashboard");
-    } catch (error) {
+      // Check for hardcoded user credentials
+      if (values.email === "Abhi" && values.password === "Abhi@12") {
+        // Simulate successful login
+        await login(values.email, values.password);
+        
+        toast({
+          title: "Login successful!",
+          description: "Welcome back to CampusSync.",
+        });
+        
+        navigate("/FeedPage");
+      } else {
+        // Simulate login failure
+        throw new Error("Invalid email or password");
+      }
+    } catch (error: any) {
+      console.error("Login error:", error);
+      
+      setErrorMessage("Invalid email or password. Please try again.");
+      
       toast({
         title: "Login failed",
         description: "Invalid email or password.",
@@ -79,12 +96,11 @@ export default function Login() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>Username</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="email@campus.edu"
+                        placeholder="Enter username"
                         {...field}
-                        autoComplete="email"
                         disabled={isLoading}
                       />
                     </FormControl>
@@ -104,7 +120,6 @@ export default function Login() {
                         type="password"
                         placeholder="••••••••"
                         {...field}
-                        autoComplete="current-password"
                         disabled={isLoading}
                       />
                     </FormControl>
@@ -113,25 +128,36 @@ export default function Login() {
                 )}
               />
 
+              {errorMessage && (
+                <div className="mb-4 p-3 bg-destructive/10 border border-destructive rounded-md text-sm text-destructive">
+                  {errorMessage}
+                </div>
+              )}
+              
               <Button
                 type="submit"
                 className="w-full bg-gradient-primary hover:opacity-90"
                 disabled={isLoading}
               >
-                {isLoading ? "Signing in..." : "Sign in"}
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  "Sign in"
+                )}
               </Button>
             </form>
           </Form>
 
           <div className="mt-4 text-center text-sm text-gray-600">
             <p>
-              Demo accounts:
+              <strong>Demo Account:</strong>
               <br />
-              Student: alex.johnson@campus.edu
+              Username: Abhi
               <br />
-              Teacher: m.chen@campus.edu
-              <br />
-              Password for both: password
+              Password: Abhi@12
             </p>
           </div>
         </div>

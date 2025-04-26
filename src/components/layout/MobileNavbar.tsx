@@ -73,7 +73,11 @@ export function MobileNavbar() {
 
               <div className="border-t p-4">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
+                  <Link 
+                    to="/profile" 
+                    className="flex items-center gap-3 hover:bg-gray-100 p-2 rounded-md transition-colors"
+                    onClick={handleNavigation}
+                  >
                     <Avatar>
                       <AvatarImage
                         src={currentUser?.avatar}
@@ -91,15 +95,30 @@ export function MobileNavbar() {
                         {currentUser?.role || "Not logged in"}
                       </span>
                     </div>
-                  </div>
+                  </Link>
 
-                  <button
-                    onClick={logout}
-                    className="rounded-full p-2 text-gray-500 hover:bg-gray-100"
-                    title="Logout"
-                  >
-                    <LogOut className="h-5 w-5" />
-                  </button>
+                  <div className="flex gap-2">
+                    <Link 
+                      to="/profile" 
+                      className="rounded-full p-2 text-gray-500 hover:bg-gray-100 transition-colors"
+                      title="Profile"
+                      onClick={handleNavigation}
+                    >
+                      <User className="h-5 w-5" />
+                    </Link>
+                    <button
+                      onClick={() => {
+                        if (window.confirm("Are you sure you want to log out?")) {
+                          logout();
+                          setIsOpen(false);
+                        }
+                      }}
+                      className="rounded-full p-2 text-gray-500 hover:bg-gray-100 hover:text-red-500 transition-colors"
+                      title="Logout"
+                    >
+                      <LogOut className="h-5 w-5" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

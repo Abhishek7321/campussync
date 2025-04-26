@@ -6,6 +6,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useLocation } from "react-router-dom";
+import { ChatBot } from "@/components/chat/ChatBot";
 
 interface LayoutProps {
   children: ReactNode;
@@ -29,6 +30,7 @@ export function Layout({
     if (path.includes("/study-groups")) return "Study Groups";
     if (path.includes("/assignments")) return "Assignments";
     if (path.includes("/messages")) return "Messages";
+    if (path.includes("/Feedpage")) return "Feed";
     return "CampusSync";
   };
 
@@ -51,6 +53,9 @@ export function Layout({
             <Plus className="h-6 w-6" />
           </Button>
         )}
+        
+        {/* ChatBot - always present on all pages */}
+        <ChatBot />
       </main>
     </div>
   );
